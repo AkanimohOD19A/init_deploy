@@ -4,7 +4,9 @@ import streamlit as st
 from pdfminer.high_level import extract_text
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
+
+
+# from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
 
 ## SetUp Dependencies
 ### Extract Text
@@ -13,10 +15,10 @@ def extract_text_from_pdf(pdf_path):
 
 
 def ChatGPT(user_query):
-    '''
+    """
     This function uses the OpenAI API to generate a response to the given
     user_query using the ChatGPT model
-    '''
+    """
     # Use the OpenAI API to generate a response
     completion = openai.Completion.create(
         engine=model_engine,
@@ -25,17 +27,19 @@ def ChatGPT(user_query):
         n=1,
         temperature=0.5,
     )
-    response = completion.choices[0].text
-    return response
+    gpt_response = completion.choices[0].text
+    return gpt_response
+
 
 response = ""
 
+
 @st.cache_data
 def api_call_on(query):
-    '''
+    """
     This function gets the user input, pass it to ChatGPT function and
     displays the response
-    '''
+    """
 
     response = ChatGPT(query)
     return response
@@ -43,6 +47,7 @@ def api_call_on(query):
 
 # Set the model engine and your OpenAI API key
 model_engine = "text-davinci-003"
+
 
 # def create_enhanced_categorization_data(text):
 #     return resume_data
@@ -75,13 +80,15 @@ def format_resume(resume_data):
     return formatted_text
 
 
-
 resume_data = {
     "personal_details": {
         "Name": "First Last",
         "Job Title": "Project Manager"
     },
-    "profile_summary": "As an experienced Project Manager, I specialize in coordinating people and processes to ensure successful project delivery. My focus is on organization, timelines, and achieving desired results. I excel at managing multiple tasks, problem-solving, and effective communication.",
+    "profile_summary": "As an experienced Project Manager, I specialize in coordinating people and processes to "
+                       "ensure successful project delivery. My focus is on organization, timelines, and achieving "
+                       "desired results. I excel at managing multiple tasks, problem-solving, and effective "
+                       "communication.",
     "experience": [
         {
             "Company": "Resume Worded",
@@ -105,7 +112,8 @@ resume_data = {
             "Responsibilities": [
                 "Implemented a change control process, reducing human errors by 85%.",
                 "Created and maintained an enterprise-wide financial data warehouse.",
-                "Developed value-added business strategies and comprehensive rebranding, resulting in a 77% revenue increase.",
+                "Developed value-added business strategies and comprehensive rebranding, resulting in a 77% revenue "
+                "increase.",
                 "Initiated Total Quality Control (TQC) improvements in supply chain departments, boosting productivity."
             ]
         },
@@ -137,8 +145,6 @@ resume_data = {
         "Team player"
     ]
 }
-
-
 
 
 # def extract_personal_details_from_pdf(text):
@@ -268,8 +274,7 @@ def main():
             y_position = 600
             for skill in cleaned_skills:
                 pdf_content.drawString(120, y_position, f". {skill}")
-                y_position -= 20 # Adjust the vertical spacing
-
+                y_position -= 20  # Adjust the vertical spacing
 
             pdf_content.save()
             with open("new_pdf.pdf", "rb") as file:
@@ -292,4 +297,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
