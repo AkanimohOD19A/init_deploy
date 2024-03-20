@@ -167,7 +167,7 @@ resume_data = {
 
 def main():
     st.title("CV Labs")
-    st.subheader("WIP")
+    st.subheader("PDF Extractor")
 
     ## User Inputs
     st.sidebar.subheader("Please enter relevant Information")
