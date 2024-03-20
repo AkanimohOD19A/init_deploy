@@ -1,0 +1,4 @@
+reportlab == 4.1.0
+openai == 0.28.0
+streamlit == 1.29.0
+pdfminer == 20191125
