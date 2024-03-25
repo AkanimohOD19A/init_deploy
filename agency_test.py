@@ -14,43 +14,73 @@ def extract_text_from_pdf(pdf_path):
     return extract_text(pdf_path)
 
 
-def ChatGPT(user_query):
-    """
-    This function uses the OpenAI API to generate a response to the given
-    user_query using the ChatGPT model
-    """
-    # Use the OpenAI API to generate a response
-    completion = openai.Completion.create(
-        engine=model_engine,
-        prompt=user_query,
-        max_tokens=1024,
-        n=1,
-        temperature=0.5,
-    )
-    gpt_response = completion.choices[0].text
-    return gpt_response
+resume_data = {
+    "personal_details": {
+        "Sample Name": "First Last",
+        "Sample Job Title": "Project Manager"
+    },
+    "Sample profile_summary": "As an experienced Project Manager, I specialize in coordinating people and processes to "
+                              "ensure successful project delivery. My focus is on organization, timelines, "
+                              "and achieving "
+                              "desired results. I excel at managing multiple tasks, problem-solving, and effective "
+                              "communication.",
+    "Sample experience": [
+        {
+            "Sample Company": "Resume Worded",
+            "Sample Location": "London, United Kingdom",
+            "Sample Industry": "Education Technology",
+            "Sample Position": "Project Manager",
+            "Sample Duration": "08/2021 – Present",
+            "Sample Responsibilities": [
+                "Initiated new customer service guidelines, resulting in improved ratings.",
+                "Renegotiated pricing with 120+ suppliers, securing an 11.5% discount.",
+                "Coordinated contract review and submission for various project-related documents.",
+                "Implemented time management and productivity systems, optimizing inter-departmental performance."
+            ]
+        },
+        {
+            "Sample Company": "Polyhire",
+            "Sample Location": "London, United Kingdom",
+            "Sample Industry": "Recruitment and Employer Branding",
+            "Sample Position": "Business Analyst",
+            "Sample Duration": "10/2019 – 07/2021",
+            "Sample Responsibilities": [
+                "Implemented a change control process, reducing human errors by 85%.",
+                "Created and maintained an enterprise-wide financial data warehouse.",
+                "Developed value-added business strategies and comprehensive rebranding, resulting in a 77% revenue "
+                "increase.",
+                "Initiated Total Quality Control (TQC) improvements in supply chain departments, boosting productivity."
+            ]
+        },
+        {
+            "Sample Company": "Growthsi",
+            "Sample Location": "London, United Kingdom & Barcelona, Spain",
+            "Sample Industry": "Career Training and Membership SaaS",
+            "Sample Position": "Key Account Executive",
+            "Sample Duration": "11/2018 – 09/2019",
+            "Sample Responsibilities": [
+                "Championed business pitches, securing $220K in Q1 2019.",
+                "Increased online sales within 60 days of employment while decreasing costs."
+            ]
+        }
+    ],
+    "Sample Education": [
+        {
+            "School": "University of New York",
+            "Major": "Bachelor of Science-Applied Statistics",
+            "Location": "New York City, New York",
+            "Date": "10/2011 - 06/2014"
+        }
+    ],
+    "Sample skills": [
+        "Excellent communicator",
+        "Effective problem solver",
+        "Skilled in project management",
+        "Comfortable managing multiple tasks",
+        "Team player"
+    ]
+}
 
-
-response = ""
-
-
-@st.cache_data
-def api_call_on(query):
-    """
-    This function gets the user input, pass it to ChatGPT function and
-    displays the response
-    """
-
-    response = ChatGPT(query)
-    return response
-
-
-# Set the model engine and your OpenAI API key
-model_engine = "text-davinci-003"
-
-
-# def create_enhanced_categorization_data(text):
-#     return resume_data
 
 def format_resume(resume_data):
     formatted_text = ""
@@ -80,73 +110,51 @@ def format_resume(resume_data):
     return formatted_text
 
 
-resume_data = {
-    "personal_details": {
-        "Name": "First Last",
-        "Job Title": "Project Manager"
-    },
-    "profile_summary": "As an experienced Project Manager, I specialize in coordinating people and processes to "
-                       "ensure successful project delivery. My focus is on organization, timelines, and achieving "
-                       "desired results. I excel at managing multiple tasks, problem-solving, and effective "
-                       "communication.",
-    "experience": [
-        {
-            "Company": "Resume Worded",
-            "Location": "London, United Kingdom",
-            "Industry": "Education Technology",
-            "Position": "Project Manager",
-            "Duration": "08/2021 – Present",
-            "Responsibilities": [
-                "Initiated new customer service guidelines, resulting in improved ratings.",
-                "Renegotiated pricing with 120+ suppliers, securing an 11.5% discount.",
-                "Coordinated contract review and submission for various project-related documents.",
-                "Implemented time management and productivity systems, optimizing inter-departmental performance."
-            ]
-        },
-        {
-            "Company": "Polyhire",
-            "Location": "London, United Kingdom",
-            "Industry": "Recruitment and Employer Branding",
-            "Position": "Business Analyst",
-            "Duration": "10/2019 – 07/2021",
-            "Responsibilities": [
-                "Implemented a change control process, reducing human errors by 85%.",
-                "Created and maintained an enterprise-wide financial data warehouse.",
-                "Developed value-added business strategies and comprehensive rebranding, resulting in a 77% revenue "
-                "increase.",
-                "Initiated Total Quality Control (TQC) improvements in supply chain departments, boosting productivity."
-            ]
-        },
-        {
-            "Company": "Growthsi",
-            "Location": "London, United Kingdom & Barcelona, Spain",
-            "Industry": "Career Training and Membership SaaS",
-            "Position": "Key Account Executive",
-            "Duration": "11/2018 – 09/2019",
-            "Responsibilities": [
-                "Championed business pitches, securing $220K in Q1 2019.",
-                "Increased online sales within 60 days of employment while decreasing costs."
-            ]
-        }
-    ],
-    "education": [
-        {
-            "School": "University of New York",
-            "Major": "Bachelor of Science-Applied Statistics",
-            "Location": "New York City, New York",
-            "Date": "10/2011 - 06/2014"
-        }
-    ],
-    "skills": [
-        "Excellent communicator",
-        "Effective problem solver",
-        "Skilled in project management",
-        "Comfortable managing multiple tasks",
-        "Team player"
-    ]
-}
+### OpenAI Dependencies
+response = ""
+# Set the model engine and your OpenAI API key
+model_engine = "text-davinci-003"
 
 
+def ChatGPT(user_query):
+    """
+    This function uses the OpenAI API to generate a response to the given
+    user_query using the ChatGPT model
+    """
+    # Use the OpenAI API to generate a response
+    completion = openai.Completion.create(
+        engine=model_engine,
+        prompt=user_query,
+        max_tokens=1024,
+        n=1,
+        temperature=0.5,
+    )
+    gpt_response = completion.choices[0].text
+    return gpt_response
+
+
+@st.cache_data
+def api_call_on(query):
+    """
+    This function gets the user input, pass it to ChatGPT function and
+    displays the response
+    """
+
+    response = ChatGPT(query)
+    return response
+
+
+### Prompts & Dependencies
+def create_enhanced_categorization_data(text):
+    prefix_prompt = "In the assigned resume, please categorize into the following " \
+                    "sections ['Personal Details', 'Profile Summary', 'Experience', 'Education', 'Skills'] " \
+                    "respectively and return as a (nested) json object"
+    resume_cat_json_prompt = f"{prefix_prompt} : {text}"
+    resume_cat_json_data = api_call_on(resume_cat_json_prompt)
+    return resume_cat_json_data
+
+
+### PDF Extraction Dependencies
 # def extract_personal_details_from_pdf(text):
 #        return
 # def extract_profile_summary_from_pdf(pdf_text):
