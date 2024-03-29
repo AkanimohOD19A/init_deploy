@@ -74,231 +74,235 @@ def main():
         cohere_key = st.sidebar.text_input("Cohere API Key", type="password")
         co = cohere.Client(str(cohere_key))
 
-        st.divider()
-        setting_the_scene = f"""
-                I need assistance refining the candidate's resume {resume_data}.
-                The specific role to focus as described in {job_description_data}. 
-                Please tailor the content to this position, ensuring clarity and coherence throughout. 
-                Emphasise any tech-related experiences significantly, 
-                adopting a professional tone with a hint of personality to keep it engaging. 
-                Stick closely to the original content without introducing new information.
-                """
+        temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)",
+                                              0.0, 0.9, 0.2, 0.1)
 
-        iron_grip = """
-                Enforce strict output format. 
+        if st.sidebar.button("Run"):
 
-                - Remove all greetings, closing messages, and informative messages 
-                  like "Informative Message," "Feedback Message," 
-                  "Post-processing Note," or "User Prompt".
-                - Return only the core extracted information from the resume.
-                """
+            st.divider()
+            setting_the_scene = f"""
+                    I need assistance refining the candidate's resume {resume_data}.
+                    The specific role to focus as described in {job_description_data}. 
+                    Please tailor the content to this position, ensuring clarity and coherence throughout. 
+                    Emphasise any tech-related experiences significantly, 
+                    adopting a professional tone with a hint of personality to keep it engaging. 
+                    Stick closely to the original content without introducing new information.
+                    """
 
-        temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)", 0.0, 0.9, 0.2, 0.1)
+            iron_grip = """
+                    Enforce strict output format. 
+    
+                    - Remove all greetings, closing messages, and informative messages 
+                      like "Informative Message," "Feedback Message," 
+                      "Post-processing Note," or "User Prompt".
+                    - Return only the core extracted information from the resume.
+                    """
 
-        #### => Class Object
-        class Resume:
-            def __init__(self, resume, job_description):
-                self.extracted_resume_text = resume
-                self.extracted_job_description_text = job_description
-                self.setting_the_scene = setting_the_scene
-                self.iron_grip = iron_grip
+            #### => Class Object
+            class Resume:
+                def __init__(self, resume, job_description):
+                    self.extracted_resume_text = resume
+                    self.extracted_job_description_text = job_description
+                    self.setting_the_scene = setting_the_scene
+                    self.iron_grip = iron_grip
 
-            def extract_pd(self):
-                section = f"**Personal details (if found)**\n" \
-                          f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
-                          f"and identify the following sections:\n" \
-                          f"**First Name**\n" \
-                          f"- Look for keywords or phrases suggesting personal details for candidate's first name.\n" \
-                          f"**Last Name**\n" \
-                          f"- Look for keywords or phrases suggesting personal details for candidate's last name.\n" \
-                          f"- Contact\n" \
-                          f"**Contact (if found)**\n" \
-                          f"- Look for any combination of keywords like City, Country, Phone Number, Email Address.\n" \
-                          f"- Extract and format the information accordingly " \
-                          f"(e.g., City, Country, Phone: +XX XXXXXXXXXX, Email: example@email.com).\n\n" \
-                          f"{self.iron_grip}"
+                def extract_pd(self):
+                    section = f"**Personal details (if found)**\n" \
+                              f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
+                              f"and identify the following sections:\n" \
+                              f"**First Name**\n" \
+                              f"- Look for keywords or phrases suggesting personal details for candidate's first name.\n" \
+                              f"**Last Name**\n" \
+                              f"- Look for keywords or phrases suggesting personal details for candidate's last name.\n" \
+                              f"- Contact\n" \
+                              f"**Contact (if found)**\n" \
+                              f"- Look for any combination of keywords like City, Country, Phone Number, Email Address.\n" \
+                              f"- Extract and format the information accordingly " \
+                              f"(e.g., City, Country, Phone: +XX XXXXXXXXXX, Email: example@email.com).\n\n" \
+                              f"{self.iron_grip}"
 
-                response = co.chat(
-                    message=section,
-                    model="command",
-                    temperature=temperature_value
-                )
+                    response = co.chat(
+                        message=section,
+                        model="command",
+                        temperature=temperature_value
+                    )
 
-                personal_details = remove_helper_text(response.text)
+                    personal_details = remove_helper_text(response.text)
 
-                return personal_details
+                    return personal_details
 
-            def extract_ps(self):
-                section = f"**Personal summary (if found)**\n" \
-                          f"Look through {self.extracted_resume_text} " \
-                          f"and identify the following (organised experience, education, and skills sections):\n" \
-                          f"Based on the organised experience, education, and skills sections, " \
-                          f"draft a personalised profile " \
-                          f"summary for a candidate seeking the titled position in the {self.extracted_job_description_text} " \
-                          f"as well as for its industry. {self.iron_grip}"
+                def extract_ps(self):
+                    section = f"**Personal summary (if found)**\n" \
+                              f"Look through {self.extracted_resume_text} " \
+                              f"and identify the following (organised experience, education, and skills sections):\n" \
+                              f"Based on the organised experience, education, and skills sections, " \
+                              f"draft a personalised profile " \
+                              f"summary for a candidate seeking the titled position in the {self.extracted_job_description_text} " \
+                              f"as well as for its industry. {self.iron_grip}"
 
-                response = co.chat(
-                    message=section,
-                    model="command",
-                    temperature=temperature_value
-                )
+                    response = co.chat(
+                        message=section,
+                        model="command",
+                        temperature=temperature_value
+                    )
 
-                personal_summary = remove_helper_text(response.text)
+                    personal_summary = remove_helper_text(response.text)
 
-                return personal_summary
+                    return personal_summary
 
-            def extract_exp(self):
-                section = f"**Experience (if found)**\n" \
-                          f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
-                          f"and review the organized experience section. Identify and prioritize " \
-                          f"experience or experiences (or any similar section mentioning " \
-                          f"job titles and responsibilities)\n" \
-                          f"that are most relevant to advertised role in the {self.extracted_job_description_text} " \
-                          f"with cognizance to the tech industry, placing them at the top of the list {self.iron_grip}"
+                def extract_exp(self):
+                    section = f"**Experience (if found)**\n" \
+                              f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
+                              f"and review the organized experience section. Identify and prioritize " \
+                              f"experience or experiences (or any similar section mentioning " \
+                              f"job titles and responsibilities)\n" \
+                              f"that are most relevant to advertised role in the {self.extracted_job_description_text} " \
+                              f"with cognizance to the tech industry, placing them at the top of the list {self.iron_grip}"
 
-                response = co.chat(
-                    message=section,
-                    model="command",
-                    temperature=temperature_value
-                )
+                    response = co.chat(
+                        message=section,
+                        model="command",
+                        temperature=temperature_value
+                    )
 
-                experience = remove_helper_text(response.text)
+                    experience = remove_helper_text(response.text)
 
-                return experience
+                    return experience
 
-            def extract_ed(self):
-                section = f"**Education (if found)**\n" \
-                          f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
-                          f"and identify the following:\n" \
-                          f"- Education\n" \
-                          f"- Look for keywords suggesting education (e.g., Education, University, Degree).\n" \
-                          f"- Extract details like University Name, Degree, Major (if applicable), " \
-                          f"Location (City, Country), and Dates of Attendance.\n\n" \
-                          f"- list the educational qualifications including degree, institution and graduation year. " \
-                          f" Place the most recent qualification at the top." \
-                          f"{self.iron_grip}"
+                def extract_ed(self):
+                    section = f"**Education (if found)**\n" \
+                              f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
+                              f"and identify the following:\n" \
+                              f"- Education\n" \
+                              f"- Look for keywords suggesting education (e.g., Education, University, Degree).\n" \
+                              f"- Extract details like University Name, Degree, Major (if applicable), " \
+                              f"Location (City, Country), and Dates of Attendance.\n\n" \
+                              f"- list the educational qualifications including degree, institution and graduation year. " \
+                              f" Place the most recent qualification at the top." \
+                              f"{self.iron_grip}"
 
-                response = co.chat(
-                    message=section,
-                    model="command",
-                    temperature=temperature_value
-                )
+                    response = co.chat(
+                        message=section,
+                        model="command",
+                        temperature=temperature_value
+                    )
 
-                education = remove_helper_text(response.text)
+                    education = remove_helper_text(response.text)
 
-                return education
+                    return education
 
-            def extract_skills(self):
-                section = f"**Skills (if found)**\n" \
-                          f"{self.setting_the_scene} Consider the job experiences " \
-                          f"and education previously in {self.extracted_resume_text}. " \
-                          f"- Look for keywords or phrases suggesting skills " \
-                          f"(e.g., Skills, Expertise, Proficient in).\n" \
-                          f"Compile a list of skills that are " \
-                          f"evident from these experiences and qualifications, " \
-                          f"focusing on those most relevant to a Job Role in {self.extracted_job_description_text} " \
-                          f"in its industry {self.iron_grip}"
+                def extract_skills(self):
+                    section = f"{self.setting_the_scene} and consider the job experiences " \
+                              f"and education previously in {self.extracted_resume_text}. " \
+                              f"**Skills (if found)**\n" \
+                              f"- Look for keywords or phrases suggesting skills " \
+                              f"(e.g., Skills, Expertise, Proficient in).\n" \
+                              f"Compile a list of skills that are " \
+                              f"evident from these experiences and qualifications, " \
+                              f"focusing on those most relevant to a Job Role in {self.extracted_job_description_text} " \
+                              f"in its industry and just return the skills as well {self.iron_grip}"
 
-                response = co.chat(
-                    message=section,
-                    model="command",
-                    temperature=temperature_value
-                )
+                    response = co.chat(
+                        message=section,
+                        model="command",
+                        temperature=temperature_value
+                    )
 
-                skill = remove_helper_text(response.text)
+                    skill = remove_helper_text(response.text)
 
-                return skill
+                    return skill
 
-        ### - Enhancement & Combination
-        # st.divider()
-        # st.write("Best Fitting")
-        ## Call Class
-        r1 = Resume(resume_data, job_description_data)
+            ### - Enhancement & Combination
+            # st.divider()
+            # st.write("Best Fitting")
+            ## Call Class
+            r1 = Resume(resume_data, job_description_data)
 
-        ### - Export
-        st.divider()
-        # Display extracted text with editable areas
-        st.header("Creating Form for best fitted data:")
-        extracted_text_sections = st.form(key="extracted_text_form")
+            ### - Export
+            st.divider()
+            # Display extracted text with editable areas
+            st.header("Best fitted data:")
+            st.subheader("Creating Form")
+            extracted_text_sections = st.form(key="extracted_text_form")
 
-        display_personal_details = r1.extract_pd()
-        personal_details = extracted_text_sections.text_area("Personal Details",
-                                                             display_personal_details,
-                                                             height=250)
-        st.divider()
-
-        display_personal_summary = r1.extract_ps()
-        personal_summary = extracted_text_sections.text_area("Personal Summary",
-                                                             display_personal_summary,
-                                                             height=250)
-        st.divider()
-
-        display_experience = r1.extract_exp()
-        candidate_experience = extracted_text_sections.text_area("Experience",
-                                                                 display_experience,
+            display_personal_details = r1.extract_pd()
+            personal_details = extracted_text_sections.text_area("Personal Details",
+                                                                 display_personal_details,
                                                                  height=250)
-        st.divider()
+            st.divider()
 
-        display_education = r1.extract_ed()
-        candidate_education = extracted_text_sections.text_area("Education",
-                                                                display_education,
-                                                                height=250)
-        st.divider()
+            display_personal_summary = r1.extract_ps()
+            personal_summary = extracted_text_sections.text_area("Personal Summary",
+                                                                 display_personal_summary,
+                                                                 height=250)
+            st.divider()
 
-        display_skills = r1.extract_skills()
-        candidate_skills = extracted_text_sections.text_area("Skills",
-                                                             display_skills,
-                                                             height=250)
+            display_experience = r1.extract_exp()
+            candidate_experience = extracted_text_sections.text_area("Experience",
+                                                                     display_experience,
+                                                                     height=250)
+            st.divider()
 
-        # name_section = extracted_text_sections.text_area("Name", personal_details['Name'], height=5)
-        # contact_section = extracted_text_sections.text_area("Contact Number", personal_details['Job Title'], height=5)
-        # skills_section = extracted_text_sections.text_area("Skills", "\n".join(skills), height=150)
+            display_education = r1.extract_ed()
+            candidate_education = extracted_text_sections.text_area("Education",
+                                                                    display_education,
+                                                                    height=250)
+            st.divider()
 
-        ## Assuming skills_section contains the user-submitted text
-        user_input_text = candidate_skills
-        skills_list = user_input_text.split("\n")
-        cleaned_skills = [skill.strip() for skill in skills_list]
-        # print(cleaned_skills)
+            display_skills = r1.extract_skills()
+            candidate_skills = extracted_text_sections.text_area("Skills",
+                                                                 display_skills,
+                                                                 height=250)
 
-        # Save button and functionality
-        if extracted_text_sections.form_submit_button("Submit form"):
-            # Add Header
-            # Create PDF content using formatted text (consider libraries like FPDF for advanced formatting)
-            pdf_content = canvas.Canvas("new_pdf.pdf", pagesize=letter)
-            pdf_content.drawString(100, 750, "Welcome to CV Labs!")
+            # name_section = extracted_text_sections.text_area("Name", personal_details['Name'], height=5)
+            # contact_section = extracted_text_sections.text_area("Contact Number", personal_details['Job Title'], height=5)
+            # skills_section = extracted_text_sections.text_area("Skills", "\n".join(skills), height=150)
 
-            # Add Personal Details
-            pdf_content.drawString(100, 720, "Personal Details:")
-            pdf_content.drawString(150, 700, personal_details)
+            ## Assuming skills_section contains the user-submitted text
+            user_input_text = candidate_skills
+            skills_list = user_input_text.split("\n")
+            cleaned_skills = [skill.strip() for skill in skills_list]
+            # print(cleaned_skills)
 
-            # Add Contact section
-            pdf_content.drawString(100, 670, "Personal Summary")
-            pdf_content.drawString(150, 650, personal_summary)
+            # Save button and functionality
+            if extracted_text_sections.form_submit_button("Submit form"):
+                # Add Header
+                # Create PDF content using formatted text (consider libraries like FPDF for advanced formatting)
+                pdf_content = canvas.Canvas("new_pdf.pdf", pagesize=letter)
+                pdf_content.drawString(100, 750, "Welcome to CV Labs!")
 
-            # Add Experience
-            pdf_content.drawString(100, 620, "Experience:")
-            pdf_content.drawString(150, 600, candidate_experience)
+                # Add Personal Details
+                pdf_content.drawString(100, 720, "Personal Details:")
+                pdf_content.drawString(150, 700, personal_details)
 
-            # Add Education
-            pdf_content.drawString(100, 570, "Education")
-            pdf_content.drawString(150, 550, candidate_education)
+                # Add Contact section
+                pdf_content.drawString(100, 670, "Personal Summary")
+                pdf_content.drawString(150, 650, personal_summary)
 
-            ## Add Skills section
-            pdf_content.drawString(100, 520, "Skills:")
-            # pdf_content.drawString(150, 600, candidate_skills)
-            y_position = 500
-            for skill in cleaned_skills:
-                pdf_content.drawString(120, y_position, f". {skill}")
-                y_position -= 20  # Adjust the vertical spacing
+                # Add Experience
+                pdf_content.drawString(100, 620, "Experience:")
+                pdf_content.drawString(150, 600, candidate_experience)
 
-            pdf_content.save()
-            with open("new_pdf.pdf", "rb") as file:
-                st.download_button(
-                    label="Download PDF",
-                    data=file,
-                    file_name="test_pdf.pdf",
-                    mime="application/octest-stream"
-                )
+                # Add Education
+                pdf_content.drawString(100, 570, "Education")
+                pdf_content.drawString(150, 550, candidate_education)
+
+                ## Add Skills section
+                pdf_content.drawString(100, 520, "Skills:")
+                # pdf_content.drawString(150, 600, candidate_skills)
+                y_position = 500
+                for skill in cleaned_skills:
+                    pdf_content.drawString(120, y_position, f". {skill}")
+                    y_position -= 20  # Adjust the vertical spacing
+
+                pdf_content.save()
+                with open("new_pdf.pdf", "rb") as file:
+                    st.download_button(
+                        label="Download PDF",
+                        data=file,
+                        file_name="test_pdf.pdf",
+                        mime="application/octest-stream"
+                    )
 
 
 ## Wire Framing
