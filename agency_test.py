@@ -5,8 +5,8 @@ from pdfminer.high_level import extract_text
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import cohere
-
-co = cohere.Client('6YsSo6S1O4zl3cl4016LqdFQUoWm1pSNFX6Wv65z')
+#
+# co = cohere.Client('6YsSo6S1O4zl3cl4016LqdFQUoWm1pSNFX6Wv65z')
 
 
 # from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
@@ -32,12 +32,6 @@ def remove_helper_text(text):
         return "\n\n".join(paragraphs[1:-1])
     else:
         return text  # Return original text if less than 3 paragraphs
-
-#
-# setting_the_scene = ""
-# iron_grip = ""
-# resume_data = ""
-# job_description_data = ""
 
 
 ### Prompts & Dependencies
@@ -77,6 +71,9 @@ def main():
     #     st.sidebar.text_input('Job Description', '<sample job description>')
 
     if uploaded_file_resume and uploaded_file_job_desc:
+        cohere_key = st.sidebar.text_input("Cohere API Key", type="password")
+        co = cohere.Client(str(cohere_key))
+
         st.divider()
         setting_the_scene = f"""
                 I need assistance refining the candidate's resume {resume_data}.
@@ -95,6 +92,8 @@ def main():
                   "Post-processing Note," or "User Prompt".
                 - Return only the core extracted information from the resume.
                 """
+
+        temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)", 0.0, 0.9, 0.2, 0.1)
 
         #### => Class Object
         class Resume:
@@ -122,7 +121,7 @@ def main():
                 response = co.chat(
                     message=section,
                     model="command",
-                    temperature=0.9
+                    temperature=temperature_value
                 )
 
                 personal_details = remove_helper_text(response.text)
@@ -141,7 +140,7 @@ def main():
                 response = co.chat(
                     message=section,
                     model="command",
-                    temperature=0.9
+                    temperature=temperature_value
                 )
 
                 personal_summary = remove_helper_text(response.text)
@@ -160,7 +159,7 @@ def main():
                 response = co.chat(
                     message=section,
                     model="command",
-                    temperature=0.9
+                    temperature=temperature_value
                 )
 
                 experience = remove_helper_text(response.text)
@@ -182,7 +181,7 @@ def main():
                 response = co.chat(
                     message=section,
                     model="command",
-                    temperature=0.9
+                    temperature=temperature_value
                 )
 
                 education = remove_helper_text(response.text)
@@ -203,7 +202,7 @@ def main():
                 response = co.chat(
                     message=section,
                     model="command",
-                    temperature=0.9
+                    temperature=temperature_value
                 )
 
                 skill = remove_helper_text(response.text)
@@ -211,15 +210,15 @@ def main():
                 return skill
 
         ### - Enhancement & Combination
-        st.divider()
-        st.write("Best Fitting")
+        # st.divider()
+        # st.write("Best Fitting")
         ## Call Class
         r1 = Resume(resume_data, job_description_data)
 
         ### - Export
         st.divider()
         # Display extracted text with editable areas
-        st.header("Creating Form:")
+        st.header("Creating Form for best fitted data:")
         extracted_text_sections = st.form(key="extracted_text_form")
 
         display_personal_details = r1.extract_pd()
