@@ -167,8 +167,8 @@ def main():
 
                 def extract_ed(self):
                     section = f"**Education (if found)**\n" \
-                              f"Find education details (University, Degree, Major, Location, Dates) " \
-                              f"in the assigned resume. List chronologically (newest first)."
+                              f"Search for education details (University, Degree, Major, Location, Dates)" \
+                              f" from the assigned resume. List chronologically (newest first)."
 
                     response_setting = co.chat(
                         message=section,
