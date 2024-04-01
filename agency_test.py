@@ -167,7 +167,7 @@ def main():
 
                 def extract_ed(self):
                     section = f"**Education (if found)**\n" \
-                              f"{self.setting_the_scene} Find education details (University, Degree, Major, Location, Dates) " \
+                              f"Find education details (University, Degree, Major, Location, Dates) " \
                               f"in the assigned resume. List chronologically (newest first)."
 
                     response_setting = co.chat(
@@ -175,10 +175,7 @@ def main():
                         model="command",
                         temperature=temperature_value,
                         prompt_truncation='AUTO',
-                        documents=[
-                            {"content": self.extracted_job_description_text},
-                            {"content": self.extracted_resume_text}
-                        ]
+                        documents=[{"content": self.extracted_resume_text}]
                     )
 
                     education = remove_helper_text(response_setting.text)
