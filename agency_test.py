@@ -3,13 +3,15 @@
 import streamlit as st
 from pdfminer.high_level import extract_text
 from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 import cohere
-#
-# co = cohere.Client('6YsSo6S1O4zl3cl4016LqdFQUoWm1pSNFX6Wv65z')
+from PIL import Image
+import tempfile
 
 
 # from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
+
 
 ## SetUp Dependencies
 ### Extract Text
@@ -32,9 +34,6 @@ def remove_helper_text(text):
         return "\n\n".join(paragraphs[1:-1])
     else:
         return text  # Return original text if less than 3 paragraphs
-
-
-### Prompts & Dependencies
 
 
 def main():
@@ -81,12 +80,8 @@ def main():
 
             st.divider()
             setting_the_scene = f"""
-                    I need assistance refining the candidate's resume {resume_data}.
-                    The specific role to focus as described in {job_description_data}. 
-                    Please tailor the content to this position, ensuring clarity and coherence throughout. 
-                    Emphasise any tech-related experiences significantly, 
-                    adopting a professional tone with a hint of personality to keep it engaging. 
-                    Stick closely to the original content without introducing new information.
+                    Refine resume provided for the job_description role. 
+                    Prioritize tech skills, maintain clarity & tone, and stay true to original content
                     """
 
             iron_grip = """
@@ -98,6 +93,8 @@ def main():
                     - Return only the core extracted information from the resume.
                     """
 
+            # section = ""
+
             #### => Class Object
             class Resume:
                 def __init__(self, resume, job_description):
@@ -105,110 +102,106 @@ def main():
                     self.extracted_job_description_text = job_description
                     self.setting_the_scene = setting_the_scene
                     self.iron_grip = iron_grip
+                    # self.personal_details_retrieval = [{"content": resume_text}]
+                    # self.skill_extraction_retrieval = [
+                    #     {"content": job_description_text},
+                    #     {"content": resume_text}
+                    # ]
 
                 def extract_pd(self):
                     section = f"**Personal details (if found)**\n" \
-                              f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
-                              f"and identify the following sections:\n" \
-                              f"**First Name**\n" \
-                              f"- Look for keywords or phrases suggesting personal details for candidate's first name.\n" \
-                              f"**Last Name**\n" \
-                              f"- Look for keywords or phrases suggesting personal details for candidate's last name.\n" \
-                              f"- Contact\n" \
-                              f"**Contact (if found)**\n" \
-                              f"- Look for any combination of keywords like City, Country, Phone Number, Email Address.\n" \
-                              f"- Extract and format the information accordingly " \
-                              f"(e.g., City, Country, Phone: +XX XXXXXXXXXX, Email: example@email.com).\n\n" \
-                              f"{self.iron_grip}"
+                              f"Search for First Name, Last Name, and Contact " \
+                              f"info (City, Country, " \
+                              f"Phone, Email) from the assigned resume. "
 
-                    response = co.chat(
+                    response_setting = co.chat(
                         message=section,
                         model="command",
-                        temperature=temperature_value
+                        temperature=temperature_value,
+                        prompt_truncation='AUTO',
+                        documents=[{"content": self.extracted_resume_text}]
                     )
 
-                    personal_details = remove_helper_text(response.text)
+                    p_details = remove_helper_text(response_setting.text)
 
-                    return personal_details
+                    return p_details
 
                 def extract_ps(self):
                     section = f"**Personal summary (if found)**\n" \
-                              f"Look through {self.extracted_resume_text} " \
-                              f"and identify the following (organised experience, education, and skills sections):\n" \
-                              f"Based on the organised experience, education, and skills sections, " \
-                              f"draft a personalised profile " \
-                              f"summary for a candidate seeking the titled position in the {self.extracted_job_description_text} " \
-                              f"as well as for its industry. {self.iron_grip}"
+                              f"{self.setting_the_scene} Draft a single concise personal summary " \
+                              f"drawing on organized experience, education, " \
+                              f"and skills from the assigned resume."
 
-                    response = co.chat(
+                    response_setting = co.chat(
                         message=section,
                         model="command",
-                        temperature=temperature_value
+                        temperature=temperature_value,
+                        prompt_truncation='AUTO',
+                        documents=[{"content": self.extracted_resume_text}]
                     )
 
-                    personal_summary = remove_helper_text(response.text)
+                    p_summary = remove_helper_text(response_setting.text)
 
-                    return personal_summary
+                    return p_summary
 
                 def extract_exp(self):
                     section = f"**Experience (if found)**\n" \
-                              f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
-                              f"and review the organized experience section. Identify and prioritize " \
-                              f"experience or experiences (or any similar section mentioning " \
-                              f"job titles and responsibilities)\n" \
-                              f"that are most relevant to advertised role in the {self.extracted_job_description_text} " \
-                              f"with cognizance to the tech industry, placing them at the top of the list {self.iron_grip}"
+                              f"{self.setting_the_scene} Analyze the assigned resume to identify relevant " \
+                              f"experiences (titles & duties) " \
+                              f"for the assigned job description (tech focus). Prioritize & list them."
 
-                    response = co.chat(
+                    response_setting = co.chat(
                         message=section,
                         model="command",
-                        temperature=temperature_value
+                        temperature=temperature_value,
+                        prompt_truncation='AUTO',
+                        documents=[
+                            {"content": self.extracted_job_description_text},
+                            {"content": self.extracted_resume_text}
+                        ]
                     )
 
-                    experience = remove_helper_text(response.text)
+                    experience = remove_helper_text(response_setting.text)
 
                     return experience
 
                 def extract_ed(self):
                     section = f"**Education (if found)**\n" \
-                              f"{self.setting_the_scene} Look through {self.extracted_resume_text} " \
-                              f"and identify the following:\n" \
-                              f"- Education\n" \
-                              f"- Look for keywords suggesting education (e.g., Education, University, Degree).\n" \
-                              f"- Extract details like University Name, Degree, Major (if applicable), " \
-                              f"Location (City, Country), and Dates of Attendance.\n\n" \
-                              f"- list the educational qualifications including degree, institution and graduation year. " \
-                              f" Place the most recent qualification at the top." \
-                              f"{self.iron_grip}"
+                              f"{self.setting_the_scene} Find education details (University, Degree, Major, Location, Dates) " \
+                              f"in the assigned resume. List chronologically (newest first)."
 
-                    response = co.chat(
+                    response_setting = co.chat(
                         message=section,
                         model="command",
-                        temperature=temperature_value
+                        temperature=temperature_value,
+                        prompt_truncation='AUTO',
+                        documents=[
+                            {"content": self.extracted_job_description_text},
+                            {"content": self.extracted_resume_text}
+                        ]
                     )
 
-                    education = remove_helper_text(response.text)
+                    education = remove_helper_text(response_setting.text)
 
                     return education
 
                 def extract_skills(self):
-                    section = f"{self.setting_the_scene} and consider the job experiences " \
-                              f"and education previously in {self.extracted_resume_text}. " \
-                              f"**Skills (if found)**\n" \
-                              f"- Look for keywords or phrases suggesting skills " \
-                              f"(e.g., Skills, Expertise, Proficient in).\n" \
-                              f"Compile a list of skills that are " \
-                              f"evident from these experiences and qualifications, " \
-                              f"focusing on those most relevant to a Job Role in {self.extracted_job_description_text} " \
-                              f"in its industry and just return the skills as well {self.iron_grip}"
+                    section = f"**Skills (if found)**\n" \
+                              f"{self.setting_the_scene} Analyze the assigned resume & the assigned job description " \
+                              f"to identify relevant skills (tech focus). Prioritize & list them."
 
-                    response = co.chat(
+                    response_setting = co.chat(
                         message=section,
                         model="command",
-                        temperature=temperature_value
+                        temperature=temperature_value,
+                        prompt_truncation='AUTO',
+                        documents=[
+                            {"content": self.extracted_job_description_text},
+                            {"content": self.extracted_resume_text}
+                        ]
                     )
 
-                    skill = remove_helper_text(response.text)
+                    skill = remove_helper_text(response_setting.text)
 
                     return skill
 
@@ -217,6 +210,7 @@ def main():
             # st.write("Best Fitting")
             ## Call Class
             r1 = Resume(resume_data, job_description_data)
+            # r1 = Resume(rs_tmp_file, job_desc_fpth)
 
             ### - Export
             st.divider()
