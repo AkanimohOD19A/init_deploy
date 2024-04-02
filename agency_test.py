@@ -199,18 +199,11 @@ def main():
             st.session_state['display_experience'] = r1.extract_exp()
             st.session_state['display_education'] = r1.extract_ed()
             st.session_state['display_skills'] = r1.extract_skills()
-            # r1 = Resume(rs_tmp_file, job_desc_fpth)
 
         ### - Export
         st.divider()
         # Display extracted text with editable areas
         st.header("Best fitted data:")
-
-        # display_personal_details = r1.extract_pd()
-        # display_personal_summary = r1.extract_ps()
-        # display_experience = r1.extract_exp()
-        # display_education = r1.extract_ed()
-        # display_skills = r1.extract_skills()
 
         personal_details = st.text_area("Personal Details", st.session_state['display_personal_details'], height=250)
         personal_summary = st.text_area("Personal Summary", st.session_state['display_personal_summary'], height=250)
@@ -267,14 +260,6 @@ def main():
                 file_name="test_pdf.pdf",
                 mime="application/octest-stream"
             )
-
-
-## Wire Framing
-### SideBar - Uploader(2) /Summary /
-
-### Categorization & Display Enhancement (as in form)
-
-### Combination for best fit
 
 if __name__ == "__main__":
     main()
