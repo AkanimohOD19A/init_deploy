@@ -3,14 +3,12 @@
 import streamlit as st
 from pdfminer.high_level import extract_text
 from reportlab.pdfgen import canvas
-from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 import cohere
+from reportlab.lib.units import inch
 from PIL import Image
 import tempfile
-
-
-# from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
+from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
 
 
 ## SetUp Dependencies
@@ -37,6 +35,18 @@ def remove_helper_text(text):
 
 
 def main():
+    ## Initiate Sessions
+    if 'display_personal_details' not in st.session_state:
+        st.session_state['display_personal_details'] = ""
+    if 'display_personal_summary' not in st.session_state:
+        st.session_state['display_personal_summary'] = ""
+    if 'display_experience' not in st.session_state:
+        st.session_state['display_experience'] = ""
+    if 'display_education' not in st.session_state:
+        st.session_state['display_education'] = ""
+    if 'display_skills' not in st.session_state:
+        st.session_state['display_skills'] = ""
+
     # global resume_data, job_description_data
     st.title("CV Labs")
     st.subheader("PDF Extractor")
@@ -48,60 +58,38 @@ def main():
     st.sidebar.divider()
     uploaded_file_job_desc = st.sidebar.file_uploader("Upload a PDF Job Description", type=["pdf"], key=234)
 
-    ## Enter OpenAI key
-    st.sidebar.divider()
-    col1, col2 = st.columns(2)
-
-    if uploaded_file_resume:
-        # Read PDF text
+    if uploaded_file_resume and uploaded_file_job_desc:
+        ## Enter OpenAI key
+        st.sidebar.divider()
+        col1, col2 = st.columns(2)
+    
         resume_data = extract_text_from_pdf(uploaded_file_resume)
         col1.write("Extracted text from the PDF:")
         col1.text_area("Resume", resume_data, height=500)
-
-        ### - LLM Extract Categorization:
-    if uploaded_file_job_desc:
-        # Read PDF text
+    
         job_description_data = extract_text_from_pdf(uploaded_file_job_desc)
         col2.write("Extracted text from the PDF:")
         col2.text_area("Job Description", job_description_data, height=500)
-
-    # elif uploaded_file_job_desc is None:
-    #     st.sidebar.subheader("Try Pasting the job description below:")
-    #     st.sidebar.text_input('Job Description', '<sample job description>')
-
-    if uploaded_file_resume and uploaded_file_job_desc:
+        
         cohere_key = st.sidebar.text_input("Cohere API Key", type="password")
         co = cohere.Client(str(cohere_key))
 
         temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)",
                                               0.0, 0.9, 0.2, 0.1)
+        
+        setting_the_scene = f"""
+                Refine resume provided for the job_description role. 
+                Prioritize tech skills, maintain clarity & tone, and stay true to original content
+                """
 
         if st.sidebar.button("Run"):
-
-            st.divider()
-            setting_the_scene = f"""
-                    Refine resume provided for the job_description role. 
-                    Prioritize tech skills, maintain clarity & tone, and stay true to original content
-                    """
-
-            iron_grip = """
-                    Enforce strict output format. 
-    
-                    - Remove all greetings, closing messages, and informative messages 
-                      like "Informative Message," "Feedback Message," 
-                      "Post-processing Note," or "User Prompt".
-                    - Return only the core extracted information from the resume.
-                    """
-
-            # section = ""
-
             #### => Class Object
             class Resume:
                 def __init__(self, resume, job_description):
                     self.extracted_resume_text = resume
                     self.extracted_job_description_text = job_description
                     self.setting_the_scene = setting_the_scene
-                    self.iron_grip = iron_grip
+                    # self.iron_grip = iron_grip
                     # self.personal_details_retrieval = [{"content": resume_text}]
                     # self.skill_extraction_retrieval = [
                     #     {"content": job_description_text},
@@ -203,97 +191,82 @@ def main():
                     return skill
 
             ### - Enhancement & Combination
-            # st.divider()
-            # st.write("Best Fitting")
             ## Call Class
             r1 = Resume(resume_data, job_description_data)
+
+            st.session_state['display_personal_details'] = r1.extract_pd()  # Update session state
+            st.session_state['display_personal_summary'] = r1.extract_ps()
+            st.session_state['display_experience'] = r1.extract_exp()
+            st.session_state['display_education'] = r1.extract_ed()
+            st.session_state['display_skills'] = r1.extract_skills()
             # r1 = Resume(rs_tmp_file, job_desc_fpth)
 
-            ### - Export
-            st.divider()
-            # Display extracted text with editable areas
-            st.header("Best fitted data:")
-            st.subheader("Creating Form")
-            extracted_text_sections = st.form(key="extracted_text_form")
+        ### - Export
+        st.divider()
+        # Display extracted text with editable areas
+        st.header("Best fitted data:")
 
-            display_personal_details = r1.extract_pd()
-            personal_details = extracted_text_sections.text_area("Personal Details",
-                                                                 display_personal_details,
-                                                                 height=250)
-            st.divider()
+        # display_personal_details = r1.extract_pd()
+        # display_personal_summary = r1.extract_ps()
+        # display_experience = r1.extract_exp()
+        # display_education = r1.extract_ed()
+        # display_skills = r1.extract_skills()
 
-            display_personal_summary = r1.extract_ps()
-            personal_summary = extracted_text_sections.text_area("Personal Summary",
-                                                                 display_personal_summary,
-                                                                 height=250)
-            st.divider()
+        personal_details = st.text_area("Personal Details", st.session_state['display_personal_details'], height=250)
+        personal_summary = st.text_area("Personal Summary", st.session_state['display_personal_summary'], height=250)
+        candidate_experience = st.text_area("Experience", st.session_state['display_experience'], height=250)
+        candidate_education = st.text_area("Education", st.session_state['display_education'], height=250)
+        candidate_skills = st.text_area("Skills", st.session_state['display_skills'], height=250)
 
-            display_experience = r1.extract_exp()
-            candidate_experience = extracted_text_sections.text_area("Experience",
-                                                                     display_experience,
-                                                                     height=250)
-            st.divider()
+        # name_section = st.text_area("Name", personal_details['Name'], height=5)
+        # contact_section = st.text_area("Contact Number", personal_details['Job Title'], height=5)
+        # skills_section = st.text_area("Skills", "\n".join(skills), height=150)
 
-            display_education = r1.extract_ed()
-            candidate_education = extracted_text_sections.text_area("Education",
-                                                                    display_education,
-                                                                    height=250)
-            st.divider()
+        ## Assuming skills_section contains the user-submitted text
+        user_input_text = candidate_skills
+        skills_list = user_input_text.split("\n")
+        cleaned_skills = [skill.strip() for skill in skills_list]
+        # print(cleaned_skills)
 
-            display_skills = r1.extract_skills()
-            candidate_skills = extracted_text_sections.text_area("Skills",
-                                                                 display_skills,
-                                                                 height=250)
+        # Save button and functionality
+        # if st.form_submit_button("Submit form"):
+        # Add Header
+        # Create PDF content using formatted text (consider libraries like FPDF for advanced formatting)
+        pdf_content = canvas.Canvas("new_pdf.pdf", pagesize=letter)
+        pdf_content.drawString(100, 750, "Welcome to CV Labs!")
 
-            # name_section = extracted_text_sections.text_area("Name", personal_details['Name'], height=5)
-            # contact_section = extracted_text_sections.text_area("Contact Number", personal_details['Job Title'], height=5)
-            # skills_section = extracted_text_sections.text_area("Skills", "\n".join(skills), height=150)
+        # Add Personal Details
+        pdf_content.drawString(100, 720, "Personal Details:")
+        pdf_content.drawString(150, 700, personal_details)
 
-            ## Assuming skills_section contains the user-submitted text
-            user_input_text = candidate_skills
-            skills_list = user_input_text.split("\n")
-            cleaned_skills = [skill.strip() for skill in skills_list]
-            # print(cleaned_skills)
+        # Add Contact section
+        pdf_content.drawString(100, 670, "Personal Summary")
+        pdf_content.drawString(150, 650, personal_summary)
 
-            # Save button and functionality
-            if extracted_text_sections.form_submit_button("Submit form"):
-                # Add Header
-                # Create PDF content using formatted text (consider libraries like FPDF for advanced formatting)
-                pdf_content = canvas.Canvas("new_pdf.pdf", pagesize=letter)
-                pdf_content.drawString(100, 750, "Welcome to CV Labs!")
+        # Add Experience
+        pdf_content.drawString(100, 620, "Experience:")
+        pdf_content.drawString(150, 600, candidate_experience)
 
-                # Add Personal Details
-                pdf_content.drawString(100, 720, "Personal Details:")
-                pdf_content.drawString(150, 700, personal_details)
+        # Add Education
+        pdf_content.drawString(100, 570, "Education")
+        pdf_content.drawString(150, 550, candidate_education)
 
-                # Add Contact section
-                pdf_content.drawString(100, 670, "Personal Summary")
-                pdf_content.drawString(150, 650, personal_summary)
+        ## Add Skills section
+        pdf_content.drawString(100, 520, "Skills:")
+        # pdf_content.drawString(150, 600, candidate_skills)
+        y_position = 500
+        for skill in cleaned_skills:
+            pdf_content.drawString(120, y_position, f". {skill}")
+            y_position -= 20  # Adjust the vertical spacing
 
-                # Add Experience
-                pdf_content.drawString(100, 620, "Experience:")
-                pdf_content.drawString(150, 600, candidate_experience)
-
-                # Add Education
-                pdf_content.drawString(100, 570, "Education")
-                pdf_content.drawString(150, 550, candidate_education)
-
-                ## Add Skills section
-                pdf_content.drawString(100, 520, "Skills:")
-                # pdf_content.drawString(150, 600, candidate_skills)
-                y_position = 500
-                for skill in cleaned_skills:
-                    pdf_content.drawString(120, y_position, f". {skill}")
-                    y_position -= 20  # Adjust the vertical spacing
-
-                pdf_content.save()
-                with open("new_pdf.pdf", "rb") as file:
-                    st.download_button(
-                        label="Download PDF",
-                        data=file,
-                        file_name="test_pdf.pdf",
-                        mime="application/octest-stream"
-                    )
+        pdf_content.save()
+        with open("new_pdf.pdf", "rb") as file:
+            st.download_button(
+                label="Download PDF",
+                data=file,
+                file_name="test_pdf.pdf",
+                mime="application/octest-stream"
+            )
 
 
 ## Wire Framing
