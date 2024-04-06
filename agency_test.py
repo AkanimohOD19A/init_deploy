@@ -17,7 +17,7 @@ def extract_text_from_pdf(pdf_path):
 
 ## Handling PDF Output: Type yourself
 # Define maximum characters per line
-max_chars_per_line = 85  # Adjust this value as needed
+max_chars_per_line = 90  # Adjust this value as needed
 
 
 def wrap_text(text):
@@ -264,8 +264,8 @@ def main():
         # print(cleaned_skills)
 
         # Define margins and spacing values (in inches)
-        margin_left = 1
-        margin_top = -9
+        margin_left = 0.5
+        margin_top = -9.5
         line_spacing = 0.2
 
         # Create PDF content
@@ -283,7 +283,7 @@ def main():
 
         # Text elements with wrapping
         sections = [
-            ("Welcome to CV Lab!", ""),
+            # ("Welcome to CV Lab!", ""),
             ("Personal Details:", personal_details),
             ("Personal Summary", personal_summary),
             ("Experience:", candidate_experience),
