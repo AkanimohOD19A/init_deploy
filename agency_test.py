@@ -4,17 +4,57 @@ import streamlit as st
 from pdfminer.high_level import extract_text
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-import cohere
+from reportlab.platypus import Image
 from reportlab.lib.units import inch
-from PIL import Image
-import tempfile
-from reportlab.platypus import SimpleDocTemplate, ListFlowable, ListItem
+import cohere
 
 
 ## SetUp Dependencies
 ### Extract Text
 def extract_text_from_pdf(pdf_path):
     return extract_text(pdf_path)
+
+
+## Handling PDF Output: Type yourself
+# Define maximum characters per line
+max_chars_per_line = 85  # Adjust this value as needed
+
+
+def wrap_text(text):
+    """
+    Wraps text to fit within the defined max_chars_per_line limit.
+
+    Args:
+        text: The string to be wrapped.
+
+    Returns:
+        A list of strings representing the wrapped text lines.
+    """
+    personal_details_lines = []
+    current_line = ""
+    for word in text.split():
+        if len(current_line + word) <= max_chars_per_line:
+            current_line += " " + word
+        else:
+            personal_details_lines.append(current_line.strip())
+            current_line = word
+    personal_details_lines.append(current_line.strip())
+    return personal_details_lines
+
+
+def pdf_add_logo(pdf_content, logo_path, default_width=120, default_height=60):
+    ## Fetch Pdf Content
+    c = pdf_content
+    logo = Image(logo_path, width=default_width, height=default_height)
+    ## Fix Weight and Height
+    page_width, page_height = letter
+    ## Define x and y length
+    x = 0.5 * (page_width - logo.drawWidth)
+    y = page_height - logo.drawWidth + 50
+    ## Fix Logo
+    logo.drawOn(c, x, y)
+    ## Update pdf_content
+    c.save()
 
 
 def remove_helper_text(text):
@@ -48,7 +88,10 @@ def main():
         st.session_state['display_skills'] = ""
 
     # global resume_data, job_description_data
-    st.title("CV Labs")
+    st.title("CV LAB")
+    st.subheader("Proof of Concept")
+
+    st.divider()
     st.subheader("PDF Extractor")
 
     ## User Inputs
@@ -62,21 +105,21 @@ def main():
         ## Enter OpenAI key
         st.sidebar.divider()
         col1, col2 = st.columns(2)
-    
+
         resume_data = extract_text_from_pdf(uploaded_file_resume)
         col1.write("Extracted text from the PDF:")
         col1.text_area("Resume", resume_data, height=500)
-    
+
         job_description_data = extract_text_from_pdf(uploaded_file_job_desc)
         col2.write("Extracted text from the PDF:")
         col2.text_area("Job Description", job_description_data, height=500)
-        
+
         cohere_key = st.sidebar.text_input("Cohere API Key", type="password")
         co = cohere.Client(str(cohere_key))
 
         temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)",
                                               0.0, 0.9, 0.2, 0.1)
-        
+
         setting_the_scene = f"""
                 Refine resume provided for the job_description role. 
                 Prioritize tech skills, maintain clarity & tone, and stay true to original content
@@ -116,9 +159,8 @@ def main():
 
                 def extract_ps(self):
                     section = f"**Personal summary (if found)**\n" \
-                              f"{self.setting_the_scene} Draft a single concise personal summary " \
-                              f"drawing on organized experience, education, " \
-                              f"and skills from the assigned resume."
+                              f"{self.setting_the_scene} and draft a single concise personal summary " \
+                              f"from the assigned resume."
 
                     response_setting = co.chat(
                         message=section,
@@ -218,41 +260,52 @@ def main():
         ## Assuming skills_section contains the user-submitted text
         user_input_text = candidate_skills
         skills_list = user_input_text.split("\n")
-        cleaned_skills = [skill.strip() for skill in skills_list]
+        # cleaned_skills = [skill.strip() for skill in skills_list]
         # print(cleaned_skills)
 
-        # Save button and functionality
-        # if st.form_submit_button("Submit form"):
-        # Add Header
-        # Create PDF content using formatted text (consider libraries like FPDF for advanced formatting)
+        # Define margins and spacing values (in inches)
+        margin_left = 1
+        margin_top = -9
+        line_spacing = 0.2
+
+        # Create PDF content
         pdf_content = canvas.Canvas("new_pdf.pdf", pagesize=letter)
-        pdf_content.drawString(100, 750, "Welcome to CV Labs!")
 
-        # Add Personal Details
-        pdf_content.drawString(100, 720, "Personal Details:")
-        pdf_content.drawString(150, 700, personal_details)
+        # Starting y position (adjust based on page size and margins)
+        # y_position = margin_top * inch
 
-        # Add Contact section
-        pdf_content.drawString(100, 670, "Personal Summary")
-        pdf_content.drawString(150, 650, personal_summary)
+        # Define fixed page height (adjust as needed)
+        page_height = 11.7  # Inches (standard letter size)
 
-        # Add Experience
-        pdf_content.drawString(100, 620, "Experience:")
-        pdf_content.drawString(150, 600, candidate_experience)
+        # Starting y position (calculate based on top margin and first element height)
+        first_line_height = pdf_content.stringWidth("Welcome to CV Lab!") * 0.1  # Assuming 0.1 is font size
+        y_position = page_height - margin_top * inch - first_line_height
 
-        # Add Education
-        pdf_content.drawString(100, 570, "Education")
-        pdf_content.drawString(150, 550, candidate_education)
+        # Text elements with wrapping
+        sections = [
+            ("Welcome to CV Lab!", ""),
+            ("Personal Details:", personal_details),
+            ("Personal Summary", personal_summary),
+            ("Experience:", candidate_experience),
+            ("Education", candidate_education),
+            ("Skills:", candidate_skills),  # Assuming no wrapping needed for skills header
+        ]
 
-        ## Add Skills section
-        pdf_content.drawString(100, 520, "Skills:")
-        # pdf_content.drawString(150, 600, candidate_skills)
-        y_position = 500
-        for skill in cleaned_skills:
-            pdf_content.drawString(120, y_position, f". {skill}")
-            y_position -= 20  # Adjust the vertical spacing
+        for title, text in sections:
+            pdf_content.drawString(margin_left * inch, y_position, title)
+            y_position -= line_spacing * inch  # Update y position
 
-        pdf_content.save()
+            # Wrap and add text content (if any)
+            if text:
+                wrapped_lines = wrap_text(text)
+                for line in wrapped_lines:
+                    pdf_content.drawString(margin_left * inch + 0.25 * inch, y_position, line)
+                    y_position -= line_spacing * inch
+
+        # pdf_content.save()
+        # pdf_content.save()
+        pdf_add_logo(pdf_content, logo_path='assets/logo.png')
+
         with open("new_pdf.pdf", "rb") as file:
             st.download_button(
                 label="Download PDF",
@@ -260,6 +313,7 @@ def main():
                 file_name="test_pdf.pdf",
                 mime="application/octest-stream"
             )
+
 
 if __name__ == "__main__":
     main()
