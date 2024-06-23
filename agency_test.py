@@ -2,6 +2,7 @@
 # import openai
 import base64
 import cohere
+import numpy as np
 import streamlit as st
 from pdfminer.high_level import extract_text
 from reportlab.pdfgen import canvas
@@ -12,6 +13,8 @@ from reportlab.lib.units import inch
 
 ## SetUp Dependencies
 ### Extract Text
+## Function to extract text from PDF with caching
+@st.cache(allow_output_mutation=True)
 def extract_text_from_pdf(pdf_path):
     return extract_text(pdf_path)
 
@@ -20,7 +23,7 @@ def extract_text_from_pdf(pdf_path):
 # Define maximum characters per line
 max_chars_per_line = 90  # Adjust this value as needed
 
-
+@st.cache_data
 def wrap_text(text):
     """
     Wraps text to fit within the defined max_chars_per_line limit.
@@ -98,6 +101,14 @@ def display_pdf(file):
     st.markdown(pdf_display, unsafe_allow_html=True)
 
 
+## Temperature Settings
+temp_settings = {
+    "Super Formal": np.random.uniform(0.0, 0.2),
+    "Formal": np.random.uniform(0.2, 0.5),
+    "Business Casual": np.random.uniform(0.5, 0.9)
+}
+
+
 def main():
     ## Initiate Sessions
     if 'display_personal_details' not in st.session_state:
@@ -116,7 +127,7 @@ def main():
     st.subheader("Proof of Concept")
 
     st.divider()
-    st.subheader("PDF Extractor")
+    # st.subheader("PDF Extractor")
 
     ## User Inputs
     st.sidebar.subheader("Please enter relevant Information")
@@ -136,31 +147,51 @@ def main():
         col1, col2 = st.columns(2)
 
         resume_data = extract_text_from_pdf(uploaded_file_resume)
-        if col1.toggle("Show Extracted Text:"):
-            col1.text_area("Resume", resume_data, height=500)
+        print("Extracted Resume", "\n\n")
+        print(resume_data)
+        ## Display Extraction: Resume
+        # if col1.toggle("Show Extracted Text:"):
+        #     col1.text_area("Resume", resume_data, height=500)
 
         job_description_data = extract_text_from_pdf(uploaded_file_job_desc)
-        if col2.toggle("Show Extracted Resume:"):
-            col2.text_area("Job Description", job_description_data, height=500)
+        print("Extracted Job Description", "\n\n")
+        print(job_description_data, "\n\n")
+        ## Display Extraction: Job Description
+        # if col2.toggle("Show Extracted Resume:"):
+        #     col2.text_area("Job Description", job_description_data, height=500)
 
         st.sidebar.header(f"Set your Cohere API Key")
         st.sidebar.link_button("get one @ Cohere 🔗", "https://dashboard.cohere.com/api-keys")
         cohere_key = st.sidebar.text_input("Cohere API Key", type="password", label_visibility="collapsed")
 
+        temp_value = st.sidebar.selectbox(f"Select Temperature", list(temp_settings.keys()))
+        temperature_value = temp_settings[temp_value]
+
         if cohere_key and len(cohere_key) >= 30:
             co = cohere.Client(str(cohere_key))
 
-            temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)",
-                                                  0.0, 0.9, 0.2, 0.1)
+            # temperature_value = st.sidebar.slider("Temprature - (Deterministic to Random)",
+            #                                       0.0, 0.9, 0.2, 0.1)
+
             setting_the_scene = f"""
                             Refine resume provided for the job_description role. 
                             Prioritize tech skills, maintain clarity & tone, and stay true to original content
                             """
+            ## Placeholder for Dynamic button
+            button_placeholder = st.sidebar.empty()
 
-            run_button = st.sidebar.button("Run")
+            ## Dynamic Run Button I
+            run_button = button_placeholder.button("Run")
+
+            # Create a placeholder for the status text
+            status_placeholder = st.sidebar.empty()
             if run_button:
+                ## Dynamic Run Button II
+                button_placeholder.empty()
+                status_placeholder.warning("Running ...")
+
                 disp_resume = None
-                st.sidebar.success("Running ...")
+                print(f"Running: {temp_value} - mapping to: {temperature_value}", "\n\n")
                 try:
                     #### => Class Object
                     class Resume:
@@ -175,7 +206,8 @@ def main():
                             #     {"content": resume_text}
                             # ]
 
-                        def extract_pd(self):
+                        @st.cache_data
+                        def extract_pd(_self):
                             section = f"**Personal details (if found)**\n" \
                                       f"Search for First Name, Last Name, and Contact " \
                                       f"info (City, Country, " \
@@ -186,16 +218,17 @@ def main():
                                 model="command",
                                 temperature=temperature_value,
                                 prompt_truncation='AUTO',
-                                documents=[{"content": self.extracted_resume_text}]
+                                documents=[{"content": _self.extracted_resume_text}]
                             )
 
                             p_details = remove_helper_text(response_setting.text)
 
                             return p_details
 
-                        def extract_ps(self):
+                        @st.cache_data
+                        def extract_ps(_self):
                             section = f"**Personal summary (if found)**\n" \
-                                      f"{self.setting_the_scene} and draft a single concise personal summary " \
+                                      f"{_self.setting_the_scene} and draft a single concise personal summary " \
                                       f"from the assigned resume."
 
                             response_setting = co.chat(
@@ -203,16 +236,17 @@ def main():
                                 model="command",
                                 temperature=temperature_value,
                                 prompt_truncation='AUTO',
-                                documents=[{"content": self.extracted_resume_text}]
+                                documents=[{"content": _self.extracted_resume_text}]
                             )
 
                             p_summary = remove_helper_text(response_setting.text)
 
                             return p_summary
 
-                        def extract_exp(self):
+                        @st.cache_data
+                        def extract_exp(_self):
                             section = f"**Experience (if found)**\n" \
-                                      f"{self.setting_the_scene} Analyze the assigned resume to identify relevant " \
+                                      f"{_self.setting_the_scene} Analyze the assigned resume to identify relevant " \
                                       f"experiences (titles & duties) " \
                                       f"for the assigned job description (tech focus). Prioritize & list them."
 
@@ -222,8 +256,8 @@ def main():
                                 temperature=temperature_value,
                                 prompt_truncation='AUTO',
                                 documents=[
-                                    {"content": self.extracted_job_description_text},
-                                    {"content": self.extracted_resume_text}
+                                    {"content": _self.extracted_job_description_text},
+                                    {"content": _self.extracted_resume_text}
                                 ]
                             )
 
@@ -231,7 +265,8 @@ def main():
 
                             return experience
 
-                        def extract_ed(self):
+                        @st.cache_data
+                        def extract_ed(_self):
                             section = f"**Education (if found)**\n" \
                                       f"Search for education details (University, Degree, Major, Location, Dates)" \
                                       f" from the assigned resume. List chronologically (newest first)."
@@ -241,16 +276,17 @@ def main():
                                 model="command",
                                 temperature=temperature_value,
                                 prompt_truncation='AUTO',
-                                documents=[{"content": self.extracted_resume_text}]
+                                documents=[{"content": _self.extracted_resume_text}]
                             )
 
                             education = remove_helper_text(response_setting.text)
 
                             return education
 
-                        def extract_skills(self):
+                        @st.cache_data
+                        def extract_skills(_self):
                             section = f"**Skills (if found)**\n" \
-                                      f"{self.setting_the_scene} Analyze the assigned resume & the assigned job description " \
+                                      f"{_self.setting_the_scene} Analyze the assigned resume & the assigned job description " \
                                       f"to identify relevant skills (tech focus). Prioritize & list them."
 
                             response_setting = co.chat(
@@ -259,8 +295,8 @@ def main():
                                 temperature=temperature_value,
                                 prompt_truncation='AUTO',
                                 documents=[
-                                    {"content": self.extracted_job_description_text},
-                                    {"content": self.extracted_resume_text}
+                                    {"content": _self.extracted_job_description_text},
+                                    {"content": _self.extracted_resume_text}
                                 ]
                             )
 
@@ -268,15 +304,25 @@ def main():
 
                             return skill
 
+                    st.snow()
                     ### - Enhancement & Combination
                     ## Call Class
                     r1 = Resume(resume_data, job_description_data)
+                    st.snow()
 
                     st.session_state['display_personal_details'] = r1.extract_pd()  # Update session state
+                    st.snow()
                     st.session_state['display_personal_summary'] = r1.extract_ps()
+                    st.snow()
                     st.session_state['display_experience'] = r1.extract_exp()
+                    st.snow()
                     st.session_state['display_education'] = r1.extract_ed()
+                    st.snow()
                     st.session_state['display_skills'] = r1.extract_skills()
+                    st.snow()
+
+                    ## Dynamic Run Button III
+                    status_placeholder.success("Completed - Rendering Document...")
 
                     ### - Export
                     st.divider()
@@ -351,6 +397,7 @@ def main():
 
                     # Close the file
                     modified_file.close()
+
 
                     # display_pdf("new_pdf.pdf")
                     with open("new_pdf.pdf", "rb") as file:
