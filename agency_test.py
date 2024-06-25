@@ -16,11 +16,13 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 from pdfminer.high_level import extract_text
 
-# Load .env file
-load_dotenv()
+# # Load .env file
+# load_dotenv()
+# # Access the variables
+# cohere_key = os.getenv('COHERE_KEY')
 
-# Access the variables
-cohere_key = os.getenv('COHERE_KEY')
+# streamlit secrets
+cohere_key = st.secrets["COHERE_KEY"]
 
 #  Set Logging to WARNING
 st_logger = logging.getLogger('streamlit')
