@@ -114,8 +114,10 @@ def display_pdf(file):
     class="pdfobject"
     type="application/pdf"
     title="Embedded PDF"
-    src="data:application/pdf;base64,{base64_pdf}"
-    style="overflow: auto; width: 100%; height: 100%;">"""
+    src="data:application/pdf;base64,{base64_pdf}" 
+    width="400" 
+    height="100%"
+    style="height:50vh; width:100%">"""
 
     # Displaying File
     st.markdown(pdf_display, unsafe_allow_html=True)
