@@ -4,6 +4,7 @@ import base64
 import requests
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import Image
+from bs4 import BeautifulSoup
 
 
 def justify_text(text, max_chars_per_line=120):
@@ -124,8 +125,12 @@ def read_webpage(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
-        content = response.text
-        return content
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        divs = soup.find_all('div')
+        div_values = [div.text for div in divs]
+
+        return div_values
     except requests.exceptions.RequestException as e:
         st.error(f"Error reading webpage: {e}")
         return None
