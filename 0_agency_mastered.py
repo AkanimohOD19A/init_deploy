@@ -79,7 +79,7 @@ margin_top = -9.5
 line_spacing = 0.2
 
 # Create PDF content
-pdf_content = canvas.Canvas("JUNK/cv_labs_pdf.pdf", pagesize=letter)
+pdf_content = canvas.Canvas("cv_labs_pdf.pdf", pagesize=letter)
 page_height = 11.7  # Inches (standard letter size)
 
 # Define maximum characters per line
@@ -483,12 +483,12 @@ def main():
         pdf_content.save()
 
         # Read and display the PDF file
-        modified_file = open("JUNK/cv_labs_pdf.pdf", "rb")
+        modified_file = open("cv_labs_pdf.pdf", "rb")
         # Close the file
         modified_file.close()
         display_pdf("cv_labs_pdf.pdf")
 
-        with open("JUNK/cv_labs_pdf.pdf", "rb") as file:
+        with open("cv_labs_pdf.pdf", "rb") as file:
             st.download_button(
                 label="Download PDF",
                 data=file,
