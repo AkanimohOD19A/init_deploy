@@ -21,7 +21,7 @@ def justify_text(text, max_chars_per_line=120):
     wrapped_lines = textwrap.fill(text, width=max_chars_per_line)
     justified_lines = [line.ljust(max_chars_per_line) for line in wrapped_lines.splitlines()]
     return justified_lines
-
+   
 
 def format_candidate_details(details):
     formatted_lines = []

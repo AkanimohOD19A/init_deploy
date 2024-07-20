@@ -41,8 +41,15 @@ setting_the_scene = """
 Refine the resume provided for the job_description role. 
 Prioritize tech skills, maintain clarity & tone, and stay true to original content.
 
-Importantly, remove any unnecessary output and go straight to the point.
+Respond in the first-person narrative
+Importantly, remove any unnecessary helper text and go straight to the point.
 """
+# Refine the resume provided for the job_description role. 
+# Prioritize tech skills, maintain clarity & tone, and stay true to original content.
+
+# Importantly, remove any unnecessary output or helper text, 
+# respond in the first-person narrative and keep the response straight to the point.
+# """
 
 format_personal_details = '''
 Name: First Last
@@ -90,13 +97,23 @@ bold_font_size = 12
 regular_font_size = 10
 
 # Bottom margin
-bottom_margin = 0.5 * inch
+bottom_margin = 3.5 * inch
 
 ################
 ## Build Page ##
 ################
 
 job_desc = ""
+
+# Define a function to check if a new page is needed
+def check_new_page(y_position, bottom_margin):
+    if y_position < bottom_margin:
+        pdf_content.showPage()  # Create a new page
+        pdf_content.setFont("Helvetica", regular_font_size)  # Reset font
+        return page_height - margin_top * inch  # Reset y_position to top of new page
+    else:
+        return y_position
+    
 
 ## Initiate Sessions
 if 'display_personal_details' not in st.session_state:
@@ -298,7 +315,6 @@ if uploaded_file_resume and job_desc:
 
                     return skill
 
-
             st.snow()
 
             ### - Enhancement & Combination
@@ -432,6 +448,7 @@ def main():
                                                    wrapped_line)  # Adjust indentation for bullet point
                 # Add an empty line after each section
                 y_position -= line_spacing * inch
+                y_position = check_new_page(y_position, bottom_margin)
 
             else:
                 # Wrap and add text content (if any)
